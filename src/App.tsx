@@ -8,6 +8,7 @@ import { WordTracing } from './pages/WordTracing';
 import { loadProgress, loadSettings, saveSettings } from './utils/storage';
 import { soundManager } from './utils/sounds';
 import { cancelSpeech } from './utils/speech';
+import { TtsDebugPanel } from './components/TtsDebugPanel';
 
 type Screen = 'splash' | 'menu' | 'counting' | 'number' | 'letter' | 'word';
 
@@ -123,6 +124,7 @@ export default function App() {
   return (
     <div style={styles.app}>
       {renderScreen()}
+      {import.meta.env.DEV ? <TtsDebugPanel /> : null}
     </div>
   );
 }
