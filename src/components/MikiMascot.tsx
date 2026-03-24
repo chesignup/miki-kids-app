@@ -2,27 +2,45 @@ interface MikiMascotProps {
   size?: 'small' | 'medium' | 'large';
   message?: string;
   animated?: boolean;
+  variant?: 'pointing' | 'logo' | 'dog';
 }
 
-export function MikiMascot({ size = 'medium', message, animated = false }: MikiMascotProps) {
+export function MikiMascot({ 
+  size = 'medium', 
+  message, 
+  animated = false,
+  variant = 'pointing'
+}: MikiMascotProps) {
   const sizeMap = {
-    small: 60,
-    medium: 100,
-    large: 150
+    small: 80,
+    medium: 120,
+    large: 180
   };
 
-  const fontSize = sizeMap[size];
+  const imageSize = sizeMap[size];
+  
+  const imageMap = {
+    pointing: '/miki/miki-pointing.png',
+    logo: '/miki/miki-logo.png',
+    dog: '/miki/miki-dog.png'
+  };
 
   return (
     <div style={styles.container}>
       <div
         style={{
-          ...styles.mascot,
-          fontSize: `${fontSize}px`,
-          animation: animated ? 'bounce 1s ease infinite' : 'none'
+          ...styles.imageWrapper,
+          width: `${imageSize}px`,
+          height: `${imageSize}px`,
+          animation: animated ? 'bounce 2s ease infinite' : 'none'
         }}
       >
-        🌟
+        <img
+          src={imageMap[variant]}
+          alt="מיקי"
+          style={styles.image}
+          loading="lazy"
+        />
       </div>
       {message && (
         <div style={styles.speechBubble}>
@@ -41,11 +59,18 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '12px'
   },
-  mascot: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    textShadow: '0 4px 12px rgba(255, 215, 0, 0.5)'
+  imageWrapper: {
+    borderRadius: '50%',
+    overflow: 'hidden',
+    boxShadow: '0 6px 20px rgba(255, 77, 166, 0.25)',
+    border: '3px solid white',
+    background: 'white'
+  },
+  image: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    objectPosition: 'top center'
   },
   speechBubble: {
     position: 'relative',
@@ -58,7 +83,7 @@ const styles: Record<string, React.CSSProperties> = {
   message: {
     margin: 0,
     fontSize: '1.1rem',
-    fontWeight: 500,
+    fontWeight: 600,
     textAlign: 'center',
     color: 'var(--text)'
   },

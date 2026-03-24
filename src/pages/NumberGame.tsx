@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TopBar } from '../components/TopBar';
 import { Celebration } from '../components/Celebration';
 import { useGameGuard } from '../hooks/useGameGuard';
@@ -26,6 +26,7 @@ export function NumberGame({
   onStarsUpdate
 }: NumberGameProps) {
   const { busyRef, lock, unlock, safeSetTimeout } = useGameGuard();
+  const currentInstructionRef = useRef('');
 
   const [targetNumber, setTargetNumber] = useState(0);
   const [numbersQueue, setNumbersQueue] = useState<number[]>([]);
@@ -36,6 +37,12 @@ export function NumberGame({
   const [gameComplete, setGameComplete] = useState(false);
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
   const [mistakes, setMistakes] = useState(0);
+
+  const speakInstruction = useCallback((num: number) => {
+    const instruction = `איפה המספר ${getHebrewNumber(num)}? מצאי אותו!`;
+    currentInstructionRef.current = instruction;
+    speak(instruction);
+  }, []);
 
   const initializeGame = useCallback(() => {
     const shuffled = shuffleArray([...ALL_NUMBERS]);
@@ -54,12 +61,21 @@ export function NumberGame({
   useEffect(() => {
     if (targetNumber !== null && !gameComplete) {
       safeSetTimeout(() => {
-        speak(`מצאי את המספר ${getHebrewNumber(targetNumber)}!`);
+        speakInstruction(targetNumber);
       }, 300);
     }
-  }, [targetNumber, gameComplete, safeSetTimeout]);
+  }, [targetNumber, gameComplete, safeSetTimeout, speakInstruction]);
 
-  const handleNumberClick = useCallback((num: number) => {
+  const handleBackgroundClick = useCallback(() => {
+    if (busyRef.current || gameComplete) return;
+    soundManager.tap();
+    if (currentInstructionRef.current) {
+      speak(currentInstructionRef.current);
+    }
+  }, [busyRef, gameComplete]);
+
+  const handleNumberClick = useCallback((num: number, e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     if (busyRef.current) return;
     lock();
 
@@ -76,7 +92,7 @@ export function NumberGame({
       setTotalStarsEarned(prev => prev + STARS_PER_CORRECT);
 
       safeSetTimeout(() => {
-        speak(`נכון! ${getHebrewNumber(num)}`);
+        speak(`יופי! זה ${getHebrewNumber(num)}`);
       }, 200);
 
       safeSetTimeout(() => {
@@ -89,7 +105,7 @@ export function NumberGame({
         if (nextIndex >= numbersQueue.length) {
           setGameComplete(true);
           soundManager.levelUp();
-          speak('כל הכבוד! סיימת את כל המספרים!');
+          speak('כל הכבוד! מצאת את כל המספרים!');
         } else {
           setCurrentIndex(nextIndex);
           setTargetNumber(numbersQueue[nextIndex]);
@@ -108,24 +124,25 @@ export function NumberGame({
         onStarsUpdate(Math.max(0, newProgress.stars));
       }
 
-      speak('נסי שוב!');
+      speak('לא נכון, נסי שוב!');
 
       safeSetTimeout(() => {
         setSelectedNumber(null);
         setNumberState(null);
         safeSetTimeout(() => {
-          speak(`מצאי את המספר ${getHebrewNumber(targetNumber)}!`);
+          speakInstruction(targetNumber);
         }, 300);
         unlock();
       }, 800);
     }
-  }, [busyRef, lock, unlock, targetNumber, currentIndex, numbersQueue, mistakes, onStarsUpdate, safeSetTimeout]);
+  }, [busyRef, lock, unlock, targetNumber, currentIndex, numbersQueue, mistakes, onStarsUpdate, safeSetTimeout, speakInstruction]);
 
-  const repeatInstruction = useCallback(() => {
+  const repeatInstruction = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     if (busyRef.current) return;
     soundManager.tap();
-    speak(`מצאי את המספר ${getHebrewNumber(targetNumber)}!`);
-  }, [busyRef, targetNumber]);
+    speakInstruction(targetNumber);
+  }, [busyRef, targetNumber, speakInstruction]);
 
   if (gameComplete) {
     return (
@@ -154,7 +171,7 @@ export function NumberGame({
   }
 
   return (
-    <div style={styles.screen}>
+    <div style={styles.screen} onClick={handleBackgroundClick}>
       <TopBar
         title="מספרים"
         stars={stars}
@@ -164,7 +181,7 @@ export function NumberGame({
       />
 
       <div style={styles.content}>
-        <div style={styles.progressContainer}>
+        <div style={styles.progressContainer} onClick={(e) => e.stopPropagation()}>
           <span style={styles.progressText}>
             {currentIndex + 1} מתוך {ALL_NUMBERS.length}
           </span>
@@ -197,10 +214,11 @@ export function NumberGame({
                   ? styles.numberWrong
                   : {})
               }}
-              onClick={() => handleNumberClick(num)}
+              onClick={(e) => handleNumberClick(num, e)}
               onTouchEnd={(e) => {
                 e.preventDefault();
-                handleNumberClick(num);
+                e.stopPropagation();
+                handleNumberClick(num, e);
               }}
               disabled={busyRef.current}
             >

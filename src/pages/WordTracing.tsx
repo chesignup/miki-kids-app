@@ -30,6 +30,7 @@ export function WordTracing({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const currentInstructionRef = useRef('');
 
   const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
   const [hitWaypoints, setHitWaypoints] = useState<Set<number>>(new Set());
@@ -41,6 +42,20 @@ export function WordTracing({
 
   const currentLetter = WORD_DOR[currentLetterIndex];
   const progress = currentLetter ? hitWaypoints.size / currentLetter.path.length : 0;
+
+  const speakInstruction = useCallback(() => {
+    const instruction = 'בואי נכתוב ביחד את המילה דור! עקבי באצבע על האותיות';
+    currentInstructionRef.current = instruction;
+    speak(instruction);
+  }, []);
+
+  const handleBackgroundClick = useCallback(() => {
+    if (busyRef.current || gameComplete || isDrawing) return;
+    soundManager.tap();
+    if (currentInstructionRef.current) {
+      speak(currentInstructionRef.current);
+    }
+  }, [busyRef, gameComplete, isDrawing]);
 
   const scalePoint = useCallback((point: Point): Point => {
     const scale = Math.min(canvasSize.width, canvasSize.height) / 200;
@@ -129,10 +144,10 @@ export function WordTracing({
   useEffect(() => {
     if (!gameComplete) {
       safeSetTimeout(() => {
-        speak('בואי נכתוב את המילה דור!');
+        speakInstruction();
       }, 300);
     }
-  }, [gameComplete, safeSetTimeout]);
+  }, [gameComplete, safeSetTimeout, speakInstruction]);
 
   const handleLetterComplete = useCallback(() => {
     if (busyRef.current) return;
@@ -144,7 +159,7 @@ export function WordTracing({
     newCompleted.add(currentLetterIndex);
     setCompletedLetters(newCompleted);
 
-    speak(`יפה מאוד! כתבת ${currentLetter?.name}!`);
+    speak(`יופי! כתבת את האות ${currentLetter?.name}!`);
 
     safeSetTimeout(() => {
       if (currentLetterIndex >= WORD_DOR.length - 1) {
@@ -269,7 +284,7 @@ export function WordTracing({
   }
 
   return (
-    <div style={styles.screen}>
+    <div style={styles.screen} onClick={handleBackgroundClick}>
       <TopBar
         title="כתיבת דור"
         stars={stars}
@@ -279,7 +294,7 @@ export function WordTracing({
       />
 
       <div style={styles.content}>
-        <div style={styles.wordDisplay}>
+        <div style={styles.wordDisplay} onClick={(e) => e.stopPropagation()}>
           {WORD_DOR.map((letter, index) => (
             <span
               key={index}
@@ -338,7 +353,7 @@ export function WordTracing({
           </span>
         </div>
 
-        <button style={styles.resetButton} onClick={resetCurrentLetter}>
+        <button style={styles.resetButton} onClick={(e) => { e.stopPropagation(); resetCurrentLetter(); }}>
           🔄 התחל מחדש
         </button>
       </div>

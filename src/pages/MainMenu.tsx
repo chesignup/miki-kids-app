@@ -35,7 +35,7 @@ const GAMES = [
   {
     id: 'word',
     title: 'כתיבה',
-    subtitle: 'כתבי "דור"',
+    subtitle: 'כתבי דור',
     emoji: '📝',
     color: '#F97316'
   }
@@ -44,7 +44,7 @@ const GAMES = [
 export function MainMenu({ stars, soundEnabled, onSoundToggle, onSelectGame }: MainMenuProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      speak('שלום! בואי נלמד ביחד!');
+      speak('שלום! בואי נשחק ונלמד ביחד!');
     }, 500);
     return () => clearTimeout(timer);
   }, []);
@@ -64,7 +64,7 @@ export function MainMenu({ stars, soundEnabled, onSoundToggle, onSelectGame }: M
     <div style={styles.container}>
       <header style={styles.header}>
         <div style={styles.headerContent}>
-          <h1 style={styles.title}>מיקי לומדת</h1>
+          <h1 style={styles.title}>מיקי מלמדת</h1>
           <div style={styles.headerRight}>
             <div style={styles.starBadge}>
               <span>⭐</span>
@@ -86,6 +86,7 @@ export function MainMenu({ stars, soundEnabled, onSoundToggle, onSelectGame }: M
           size="large" 
           message="בואי נשחק!" 
           animated={false}
+          variant="pointing"
         />
 
         <div style={styles.gamesGrid}>

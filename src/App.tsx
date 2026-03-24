@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { SplashScreen } from './components/SplashScreen';
 import { MainMenu } from './pages/MainMenu';
 import { CountingGame } from './pages/CountingGame';
 import { NumberGame } from './pages/NumberGame';
@@ -8,10 +9,10 @@ import { loadProgress, loadSettings, saveSettings } from './utils/storage';
 import { soundManager } from './utils/sounds';
 import { cancelSpeech } from './utils/speech';
 
-type Screen = 'menu' | 'counting' | 'number' | 'letter' | 'word';
+type Screen = 'splash' | 'menu' | 'counting' | 'number' | 'letter' | 'word';
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('menu');
+  const [screen, setScreen] = useState<Screen>('splash');
   const [stars, setStars] = useState(0);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
@@ -57,8 +58,14 @@ export default function App() {
     setStars(progress.stars);
   }, []);
 
+  const handleSplashComplete = useCallback(() => {
+    setScreen('menu');
+  }, []);
+
   const renderScreen = () => {
     switch (screen) {
+      case 'splash':
+        return <SplashScreen onComplete={handleSplashComplete} />;
       case 'menu':
         return (
           <MainMenu

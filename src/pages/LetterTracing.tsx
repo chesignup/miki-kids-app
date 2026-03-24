@@ -30,6 +30,7 @@ export function LetterTracing({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const currentInstructionRef = useRef('');
 
   const [letterIndex, setLetterIndex] = useState(0);
   const [hitWaypoints, setHitWaypoints] = useState<Set<number>>(new Set());
@@ -41,6 +42,20 @@ export function LetterTracing({
 
   const currentLetter = TRACING_LETTERS[letterIndex];
   const progress = currentLetter ? hitWaypoints.size / currentLetter.path.length : 0;
+
+  const speakInstruction = useCallback((letterName: string) => {
+    const instruction = `עקבי באצבע על האות ${letterName}`;
+    currentInstructionRef.current = instruction;
+    speak(instruction);
+  }, []);
+
+  const handleBackgroundClick = useCallback(() => {
+    if (busyRef.current || gameComplete || isDrawing) return;
+    soundManager.tap();
+    if (currentInstructionRef.current) {
+      speak(currentInstructionRef.current);
+    }
+  }, [busyRef, gameComplete, isDrawing]);
 
   const scalePoint = useCallback((point: Point): Point => {
     const scale = Math.min(canvasSize.width, canvasSize.height) / 200;
@@ -129,10 +144,10 @@ export function LetterTracing({
   useEffect(() => {
     if (currentLetter && !gameComplete) {
       safeSetTimeout(() => {
-        speak(`עקבי אחרי האות ${currentLetter.name}`);
+        speakInstruction(currentLetter.name);
       }, 300);
     }
-  }, [letterIndex, currentLetter, gameComplete, safeSetTimeout]);
+  }, [letterIndex, currentLetter, gameComplete, safeSetTimeout, speakInstruction]);
 
   const checkWaypoint = useCallback((point: Point) => {
     if (!currentLetter) return;
@@ -166,7 +181,7 @@ export function LetterTracing({
     onStarsUpdate(newProgress.stars);
     setTotalStarsEarned(prev => prev + STARS_PER_LETTER);
 
-    speak(`כל הכבוד! כתבת ${currentLetter?.name}!`);
+    speak(`יופי! כתבת את האות ${currentLetter?.name}!`);
 
     safeSetTimeout(() => {
       setShowCelebration(false);
@@ -263,7 +278,7 @@ export function LetterTracing({
   }
 
   return (
-    <div style={styles.screen}>
+    <div style={styles.screen} onClick={handleBackgroundClick}>
       <TopBar
         title="אותיות"
         stars={stars}
@@ -273,7 +288,7 @@ export function LetterTracing({
       />
 
       <div style={styles.content}>
-        <div style={styles.progressContainer}>
+        <div style={styles.progressContainer} onClick={(e) => e.stopPropagation()}>
           <span style={styles.progressText}>
             אות {letterIndex + 1} מתוך {TRACING_LETTERS.length}
           </span>
@@ -327,7 +342,7 @@ export function LetterTracing({
           </span>
         </div>
 
-        <button style={styles.resetButton} onClick={resetLetter}>
+        <button style={styles.resetButton} onClick={(e) => { e.stopPropagation(); resetLetter(); }}>
           🔄 התחל מחדש
         </button>
       </div>

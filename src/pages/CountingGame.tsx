@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { TopBar } from '../components/TopBar';
 import { Celebration } from '../components/Celebration';
 import { useGameGuard } from '../hooks/useGameGuard';
@@ -26,6 +26,7 @@ export function CountingGame({
   onStarsUpdate
 }: CountingGameProps) {
   const { busyRef, lock, unlock, safeSetTimeout } = useGameGuard();
+  const currentInstructionRef = useRef('');
 
   const [round, setRound] = useState(1);
   const [count, setCount] = useState(0);
@@ -37,6 +38,12 @@ export function CountingGame({
   const [optionState, setOptionState] = useState<'correct' | 'wrong' | null>(null);
   const [gameComplete, setGameComplete] = useState(false);
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
+
+  const speakInstruction = useCallback((emojiName: string) => {
+    const instruction = `ספרי את ה${emojiName}. כמה יש?`;
+    currentInstructionRef.current = instruction;
+    speak(instruction);
+  }, []);
 
   const generateRound = useCallback(() => {
     const newCount = Math.floor(Math.random() * 10) + 1;
@@ -52,15 +59,24 @@ export function CountingGame({
     setOptionState(null);
 
     safeSetTimeout(() => {
-      speak(`ספרי את ה${newEmoji.name}! כמה יש?`);
+      speakInstruction(newEmoji.name);
     }, 300);
-  }, [safeSetTimeout]);
+  }, [safeSetTimeout, speakInstruction]);
 
   useEffect(() => {
     generateRound();
   }, [generateRound]);
 
-  const handleOptionClick = useCallback((option: number) => {
+  const handleBackgroundClick = useCallback(() => {
+    if (busyRef.current || gameComplete) return;
+    soundManager.tap();
+    if (currentInstructionRef.current) {
+      speak(currentInstructionRef.current);
+    }
+  }, [busyRef, gameComplete]);
+
+  const handleOptionClick = useCallback((option: number, e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     if (busyRef.current) return;
     lock();
 
@@ -77,7 +93,7 @@ export function CountingGame({
       setTotalStarsEarned(prev => prev + STARS_PER_CORRECT);
 
       safeSetTimeout(() => {
-        speak(`נכון! ${getHebrewNumber(count)}`);
+        speak(`יופי! התשובה היא ${getHebrewNumber(count)}`);
       }, 200);
 
       safeSetTimeout(() => {
@@ -104,7 +120,7 @@ export function CountingGame({
         onStarsUpdate(Math.max(0, newProgress.stars));
       }
 
-      speak('נסי שוב!');
+      speak('לא נכון, נסי שוב!');
 
       safeSetTimeout(() => {
         setSelectedOption(null);
@@ -141,7 +157,7 @@ export function CountingGame({
   }
 
   return (
-    <div style={styles.screen}>
+    <div style={styles.screen} onClick={handleBackgroundClick}>
       <TopBar
         title="ספירה"
         stars={stars}
@@ -151,7 +167,7 @@ export function CountingGame({
       />
 
       <div style={styles.content}>
-        <div style={styles.progressContainer}>
+        <div style={styles.progressContainer} onClick={(e) => e.stopPropagation()}>
           <span style={styles.roundText}>שאלה {round} מתוך {TOTAL_ROUNDS}</span>
           <div style={styles.progressBar}>
             <div
@@ -196,10 +212,11 @@ export function CountingGame({
                   ? styles.optionWrong
                   : {})
               }}
-              onClick={() => handleOptionClick(option)}
+              onClick={(e) => handleOptionClick(option, e)}
               onTouchEnd={(e) => {
                 e.preventDefault();
-                handleOptionClick(option);
+                e.stopPropagation();
+                handleOptionClick(option, e);
               }}
               disabled={busyRef.current}
             >
