@@ -1,20 +1,130 @@
 import { soundManager } from './sounds';
 
-// TTS is disabled because Android WebView doesn't have proper Hebrew voice support.
-// The app will use sound effects only until proper Hebrew audio files are added.
-// To enable TTS in the future, set this to true and implement proper voice detection.
-const TTS_ENABLED = false;
+let hebrewVoiceAvailable: boolean | null = null;
+let selectedHebrewVoice: SpeechSynthesisVoice | null = null;
+let voicesChecked = false;
 
-export function speak(text: string, _lang: string = 'he-IL'): void {
+function isAndroidWebView(): boolean {
+  const ua = navigator.userAgent.toLowerCase();
+  return ua.includes('android') && (ua.includes('wv') || ua.includes('webview'));
+}
+
+function findHebrewVoice(): SpeechSynthesisVoice | null {
+  if (typeof speechSynthesis === 'undefined') return null;
+  
+  try {
+    const voices = speechSynthesis.getVoices();
+    if (voices.length === 0) return null;
+    
+    // Try to find a Hebrew voice with various language codes
+    const hebrewCodes = ['he-il', 'he', 'iw-il', 'iw'];
+    
+    for (const code of hebrewCodes) {
+      const voice = voices.find(v => v.lang.toLowerCase().startsWith(code));
+      if (voice) {
+        console.log('[TTS] Found Hebrew voice:', voice.name, voice.lang);
+        return voice;
+      }
+    }
+    
+    // Check voice names for Hebrew keywords
+    const hebrewByName = voices.find(v => 
+      v.name.toLowerCase().includes('hebrew') ||
+      v.name.toLowerCase().includes('ivrit')
+    );
+    if (hebrewByName) {
+      console.log('[TTS] Found Hebrew voice by name:', hebrewByName.name);
+      return hebrewByName;
+    }
+    
+    console.log('[TTS] No Hebrew voice found. Available:', voices.map(v => `${v.name}(${v.lang})`).join(', '));
+    return null;
+  } catch (e) {
+    console.log('[TTS] Error finding voice:', e);
+    return null;
+  }
+}
+
+function checkVoices(): void {
+  if (voicesChecked) return;
+  
+  // On Android WebView, disable TTS entirely
+  if (isAndroidWebView()) {
+    console.log('[TTS] Android WebView detected - disabling TTS');
+    hebrewVoiceAvailable = false;
+    voicesChecked = true;
+    return;
+  }
+  
+  selectedHebrewVoice = findHebrewVoice();
+  hebrewVoiceAvailable = selectedHebrewVoice !== null;
+  
+  if (hebrewVoiceAvailable) {
+    voicesChecked = true;
+  }
+}
+
+function initVoices(): void {
+  if (typeof speechSynthesis === 'undefined') return;
+  
+  try {
+    // Check immediately
+    checkVoices();
+    
+    // Also listen for voices to load asynchronously
+    speechSynthesis.addEventListener('voiceschanged', () => {
+      checkVoices();
+    });
+    
+    // Force voice loading
+    speechSynthesis.getVoices();
+  } catch {
+    // ignore
+  }
+}
+
+initVoices();
+
+export function speak(text: string, lang: string = 'he-IL'): void {
   // Always play a sound for feedback
   soundManager.click();
   
   if (!soundManager.enabled) return;
-  
-  // TTS disabled - just log what would be spoken
-  if (!TTS_ENABLED) {
-    console.log('[TTS disabled] Would speak:', text);
-    return;
+
+  try {
+    if (typeof speechSynthesis === 'undefined') return;
+    
+    // Re-check voices if not checked yet
+    if (!voicesChecked) {
+      checkVoices();
+    }
+    
+    // Skip TTS if no Hebrew voice available
+    if (hebrewVoiceAvailable === false) {
+      console.log('[TTS] Skipping (no Hebrew voice):', text);
+      return;
+    }
+    
+    // Cancel any ongoing speech
+    speechSynthesis.cancel();
+    
+    const utterance = new SpeechSynthesisUtterance(text);
+    
+    if (selectedHebrewVoice) {
+      utterance.voice = selectedHebrewVoice;
+      utterance.lang = selectedHebrewVoice.lang;
+    } else {
+      utterance.lang = lang;
+    }
+    
+    utterance.rate = 0.85;
+    utterance.pitch = 1.1;
+    utterance.volume = 1;
+    
+    console.log('[TTS] Speaking:', text);
+    speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.log('[TTS] Error:', e);
   }
 }
 
@@ -52,5 +162,5 @@ export function cancelSpeech(): void {
 }
 
 export function isHebrewVoiceAvailable(): boolean {
-  return false;
+  return hebrewVoiceAvailable === true;
 }
