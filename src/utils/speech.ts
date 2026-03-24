@@ -85,42 +85,88 @@ function initVoices(): void {
 
 initVoices();
 
-export function speak(text: string, lang: string = 'he-IL'): void {
-  // Always play a sound for feedback
-  soundManager.click();
-  
+function createUtterance(text: string, lang: string, rate: number, pitch: number): SpeechSynthesisUtterance {
+  const utterance = new SpeechSynthesisUtterance(text);
+  if (selectedHebrewVoice) {
+    utterance.voice = selectedHebrewVoice;
+    utterance.lang = selectedHebrewVoice.lang;
+  } else {
+    utterance.lang = lang;
+  }
+  utterance.rate = rate;
+  utterance.pitch = pitch;
+  utterance.volume = 1;
+  return utterance;
+}
+
+/** Queue several short phrases — clearer boundaries than one long sentence for many TTS engines. */
+export function speakSequence(
+  parts: string[],
+  options?: { lang?: string; rate?: number; pitch?: number; clickOnce?: boolean }
+): void {
+  const lang = options?.lang ?? 'he-IL';
+  const rate = options?.rate ?? 0.8;
+  const pitch = options?.pitch ?? 1.05;
+  const clickOnce = options?.clickOnce !== false;
+
+  if (clickOnce) {
+    soundManager.click();
+  }
+
   if (!soundManager.enabled) return;
 
   try {
     if (typeof speechSynthesis === 'undefined') return;
-    
+
+    if (!voicesChecked) {
+      checkVoices();
+    }
+
+    if (hebrewVoiceAvailable === false) {
+      console.log('[TTS] Skipping sequence (no Hebrew voice):', parts);
+      return;
+    }
+
+    const trimmed = parts.map((p) => p.trim()).filter(Boolean);
+    if (trimmed.length === 0) return;
+
+    speechSynthesis.cancel();
+
+    for (const text of trimmed) {
+      const u = createUtterance(text, lang, rate, pitch);
+      console.log('[TTS] Queue:', text);
+      speechSynthesis.speak(u);
+    }
+  } catch (e) {
+    console.log('[TTS] Error:', e);
+  }
+}
+
+export function speak(text: string, lang: string = 'he-IL'): void {
+  // Always play a sound for feedback
+  soundManager.click();
+
+  if (!soundManager.enabled) return;
+
+  try {
+    if (typeof speechSynthesis === 'undefined') return;
+
     // Re-check voices if not checked yet
     if (!voicesChecked) {
       checkVoices();
     }
-    
+
     // Skip TTS if no Hebrew voice available
     if (hebrewVoiceAvailable === false) {
       console.log('[TTS] Skipping (no Hebrew voice):', text);
       return;
     }
-    
+
     // Cancel any ongoing speech
     speechSynthesis.cancel();
-    
-    const utterance = new SpeechSynthesisUtterance(text);
-    
-    if (selectedHebrewVoice) {
-      utterance.voice = selectedHebrewVoice;
-      utterance.lang = selectedHebrewVoice.lang;
-    } else {
-      utterance.lang = lang;
-    }
-    
-    utterance.rate = 0.85;
-    utterance.pitch = 1.1;
-    utterance.volume = 1;
-    
+
+    const utterance = createUtterance(text, lang, 0.85, 1.1);
+
     console.log('[TTS] Speaking:', text);
     speechSynthesis.speak(utterance);
   } catch (e) {

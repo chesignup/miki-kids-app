@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { MikiMascot } from '../components/MikiMascot';
 import { soundManager } from '../utils/sounds';
-import { speak } from '../utils/speech';
+import { speakSequence } from '../utils/speech';
 
 interface MainMenuProps {
   stars: number;
@@ -44,7 +44,8 @@ const GAMES = [
 export function MainMenu({ stars, soundEnabled, onSoundToggle, onSelectGame }: MainMenuProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
-      speak('שלום! בואי נשחק ונלמד ביחד!');
+      // Short queued phrases read more clearly than one long line with ! marks
+      speakSequence(['שלום.', 'בואי נשחק.', 'נלמד ביחד.'], { rate: 0.78, pitch: 1.05 });
     }, 500);
     return () => clearTimeout(timer);
   }, []);
