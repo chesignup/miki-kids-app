@@ -5,7 +5,13 @@ import { useGameGuard } from '../hooks/useGameGuard';
 import { WORD_DOR, isNearWaypoint } from '../data/hebrewLetters';
 import type { Point } from '../data/hebrewLetters';
 import { soundManager } from '../utils/sounds';
-import { speak } from '../utils/speech';
+import { speakSequence } from '../utils/speech';
+import {
+  TTS_WORD_DOR_INTRO,
+  ttsTraceLetterParts,
+  ttsLetterDoneParts,
+  TTS_WORD_DOR_DONE
+} from '../utils/hebrewTtsText';
 import { addStars } from '../utils/storage';
 
 interface WordTracingProps {
@@ -18,6 +24,7 @@ interface WordTracingProps {
 
 const STARS_ON_COMPLETE = 5;
 const COMPLETION_THRESHOLD = 0.8;
+const TTS_OPTS = { rate: 0.78, pitch: 1.05 } as const;
 
 export function WordTracing({
   stars,
@@ -30,7 +37,7 @@ export function WordTracing({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentInstructionRef = useRef('');
+  const currentInstructionPartsRef = useRef<string[]>([]);
 
   const [currentLetterIndex, setCurrentLetterIndex] = useState(0);
   const [hitWaypoints, setHitWaypoints] = useState<Set<number>>(new Set());
@@ -43,17 +50,12 @@ export function WordTracing({
   const currentLetter = WORD_DOR[currentLetterIndex];
   const progress = currentLetter ? hitWaypoints.size / currentLetter.path.length : 0;
 
-  const speakInstruction = useCallback(() => {
-    const instruction = 'בואי נכתוב ביחד את המילה דור! עקבי עם האצבע על האותיות';
-    currentInstructionRef.current = instruction;
-    speak(instruction);
-  }, []);
-
   const handleBackgroundClick = useCallback(() => {
     if (busyRef.current || gameComplete || isDrawing) return;
     soundManager.tap();
-    if (currentInstructionRef.current) {
-      speak(currentInstructionRef.current);
+    const parts = currentInstructionPartsRef.current;
+    if (parts.length > 0) {
+      speakSequence(parts, { ...TTS_OPTS, clickOnce: false });
     }
   }, [busyRef, gameComplete, isDrawing]);
 
@@ -142,12 +144,17 @@ export function WordTracing({
   }, [drawCanvas]);
 
   useEffect(() => {
-    if (!gameComplete) {
-      safeSetTimeout(() => {
-        speakInstruction();
-      }, 300);
-    }
-  }, [gameComplete, safeSetTimeout, speakInstruction]);
+    if (gameComplete || !currentLetter) return;
+    const parts =
+      currentLetterIndex === 0
+        ? [...TTS_WORD_DOR_INTRO]
+        : ttsTraceLetterParts(currentLetter.name);
+    currentInstructionPartsRef.current = parts;
+    const t = window.setTimeout(() => {
+      speakSequence(parts, TTS_OPTS);
+    }, 300);
+    return () => window.clearTimeout(t);
+  }, [currentLetterIndex, currentLetter, gameComplete]);
 
   const handleLetterComplete = useCallback(() => {
     if (busyRef.current) return;
@@ -159,7 +166,9 @@ export function WordTracing({
     newCompleted.add(currentLetterIndex);
     setCompletedLetters(newCompleted);
 
-    speak(`כל הכבוד! כתבת את האות ${currentLetter?.name}!`);
+    if (currentLetter) {
+      speakSequence(ttsLetterDoneParts(currentLetter.name), TTS_OPTS);
+    }
 
     safeSetTimeout(() => {
       if (currentLetterIndex >= WORD_DOR.length - 1) {
@@ -171,7 +180,7 @@ export function WordTracing({
         onStarsUpdate(newProgress.stars);
 
         safeSetTimeout(() => {
-          speak('כל הכבוד! כתבת את המילה דור!');
+          speakSequence(TTS_WORD_DOR_DONE, TTS_OPTS);
         }, 500);
       } else {
         setCurrentLetterIndex(prev => prev + 1);

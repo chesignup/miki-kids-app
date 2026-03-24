@@ -2,9 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { TopBar } from '../components/TopBar';
 import { Celebration } from '../components/Celebration';
 import { useGameGuard } from '../hooks/useGameGuard';
-import { shuffleArray, getHebrewNumber } from '../data/numbers';
+import { shuffleArray } from '../data/numbers';
 import { soundManager } from '../utils/sounds';
-import { speak } from '../utils/speech';
+import { speakSequence } from '../utils/speech';
+import {
+  ttsNumberFindParts,
+  ttsNumberCorrectParts,
+  TTS_NUMBERS_ALL_DONE,
+  TTS_WRONG_TRY_AGAIN
+} from '../utils/hebrewTtsText';
 import { addStars } from '../utils/storage';
 
 interface NumberGameProps {
@@ -17,6 +23,7 @@ interface NumberGameProps {
 
 const ALL_NUMBERS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 const STARS_PER_CORRECT = 2;
+const TTS_OPTS = { rate: 0.78, pitch: 1.05 } as const;
 
 export function NumberGame({
   stars,
@@ -26,7 +33,7 @@ export function NumberGame({
   onStarsUpdate
 }: NumberGameProps) {
   const { busyRef, lock, unlock, safeSetTimeout } = useGameGuard();
-  const currentInstructionRef = useRef('');
+  const currentInstructionPartsRef = useRef<string[]>([]);
 
   const [targetNumber, setTargetNumber] = useState(0);
   const [numbersQueue, setNumbersQueue] = useState<number[]>([]);
@@ -39,9 +46,9 @@ export function NumberGame({
   const [mistakes, setMistakes] = useState(0);
 
   const speakInstruction = useCallback((num: number) => {
-    const instruction = `איפה המספר ${getHebrewNumber(num)}? בואי נמצא אותו!`;
-    currentInstructionRef.current = instruction;
-    speak(instruction);
+    const parts = ttsNumberFindParts(num);
+    currentInstructionPartsRef.current = parts;
+    speakSequence(parts, TTS_OPTS);
   }, []);
 
   const initializeGame = useCallback(() => {
@@ -69,8 +76,9 @@ export function NumberGame({
   const handleBackgroundClick = useCallback(() => {
     if (busyRef.current || gameComplete) return;
     soundManager.tap();
-    if (currentInstructionRef.current) {
-      speak(currentInstructionRef.current);
+    const parts = currentInstructionPartsRef.current;
+    if (parts.length > 0) {
+      speakSequence(parts, { ...TTS_OPTS, clickOnce: false });
     }
   }, [busyRef, gameComplete]);
 
@@ -92,7 +100,7 @@ export function NumberGame({
       setTotalStarsEarned(prev => prev + STARS_PER_CORRECT);
 
       safeSetTimeout(() => {
-        speak(`כל הכבוד! זה המספר ${getHebrewNumber(num)}`);
+        speakSequence(ttsNumberCorrectParts(num), TTS_OPTS);
       }, 200);
 
       safeSetTimeout(() => {
@@ -105,7 +113,7 @@ export function NumberGame({
         if (nextIndex >= numbersQueue.length) {
           setGameComplete(true);
           soundManager.levelUp();
-          speak('כל הכבוד! מצאת את כל המספרים!');
+          speakSequence(TTS_NUMBERS_ALL_DONE, TTS_OPTS);
         } else {
           setCurrentIndex(nextIndex);
           setTargetNumber(numbersQueue[nextIndex]);
@@ -124,7 +132,7 @@ export function NumberGame({
         onStarsUpdate(Math.max(0, newProgress.stars));
       }
 
-      speak('זה לא המספר, נסי שוב!');
+      speakSequence(TTS_WRONG_TRY_AGAIN, TTS_OPTS);
 
       safeSetTimeout(() => {
         setSelectedNumber(null);

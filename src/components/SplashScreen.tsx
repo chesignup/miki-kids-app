@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { speak } from '../utils/speech';
+import { speakSequence } from '../utils/speech';
+import { TTS_SPLASH } from '../utils/hebrewTtsText';
 
 interface SplashScreenProps {
   onComplete: () => void;
@@ -10,7 +11,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
   useEffect(() => {
     const speakTimer = setTimeout(() => {
-      speak('מיקי מלמדת!');
+      speakSequence(TTS_SPLASH, { rate: 0.78, pitch: 1.05 });
     }, 500);
 
     const fadeTimer = setTimeout(() => {

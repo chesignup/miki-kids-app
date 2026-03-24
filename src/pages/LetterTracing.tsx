@@ -5,7 +5,12 @@ import { useGameGuard } from '../hooks/useGameGuard';
 import { TRACING_LETTERS, isNearWaypoint } from '../data/hebrewLetters';
 import type { Point } from '../data/hebrewLetters';
 import { soundManager } from '../utils/sounds';
-import { speak } from '../utils/speech';
+import { speakSequence } from '../utils/speech';
+import {
+  ttsTraceLetterParts,
+  ttsLetterDoneParts,
+  TTS_ALL_LETTERS_DONE
+} from '../utils/hebrewTtsText';
 import { addStars } from '../utils/storage';
 
 interface LetterTracingProps {
@@ -18,6 +23,7 @@ interface LetterTracingProps {
 
 const STARS_PER_LETTER = 3;
 const COMPLETION_THRESHOLD = 0.8;
+const TTS_OPTS = { rate: 0.78, pitch: 1.05 } as const;
 
 export function LetterTracing({
   stars,
@@ -30,7 +36,7 @@ export function LetterTracing({
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentInstructionRef = useRef('');
+  const currentInstructionPartsRef = useRef<string[]>([]);
 
   const [letterIndex, setLetterIndex] = useState(0);
   const [hitWaypoints, setHitWaypoints] = useState<Set<number>>(new Set());
@@ -44,16 +50,17 @@ export function LetterTracing({
   const progress = currentLetter ? hitWaypoints.size / currentLetter.path.length : 0;
 
   const speakInstruction = useCallback((letterName: string) => {
-    const instruction = `עקבי עם האצבע על האות ${letterName}`;
-    currentInstructionRef.current = instruction;
-    speak(instruction);
+    const parts = ttsTraceLetterParts(letterName);
+    currentInstructionPartsRef.current = parts;
+    speakSequence(parts, TTS_OPTS);
   }, []);
 
   const handleBackgroundClick = useCallback(() => {
     if (busyRef.current || gameComplete || isDrawing) return;
     soundManager.tap();
-    if (currentInstructionRef.current) {
-      speak(currentInstructionRef.current);
+    const parts = currentInstructionPartsRef.current;
+    if (parts.length > 0) {
+      speakSequence(parts, { ...TTS_OPTS, clickOnce: false });
     }
   }, [busyRef, gameComplete, isDrawing]);
 
@@ -181,7 +188,9 @@ export function LetterTracing({
     onStarsUpdate(newProgress.stars);
     setTotalStarsEarned(prev => prev + STARS_PER_LETTER);
 
-    speak(`כל הכבוד! כתבת את האות ${currentLetter?.name}!`);
+    if (currentLetter) {
+      speakSequence(ttsLetterDoneParts(currentLetter.name), TTS_OPTS);
+    }
 
     safeSetTimeout(() => {
       setShowCelebration(false);
@@ -189,7 +198,7 @@ export function LetterTracing({
       if (letterIndex >= TRACING_LETTERS.length - 1) {
         setGameComplete(true);
         soundManager.levelUp();
-        speak('מעולה! סיימת לכתוב את כל האותיות!');
+        speakSequence(TTS_ALL_LETTERS_DONE, TTS_OPTS);
       } else {
         setLetterIndex(prev => prev + 1);
         setHitWaypoints(new Set());

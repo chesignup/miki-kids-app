@@ -1,4 +1,5 @@
 import { soundManager } from './sounds';
+import { ttsNumberFeminine } from './hebrewTtsText';
 
 let hebrewVoiceAvailable: boolean | null = null;
 let selectedHebrewVoice: SpeechSynthesisVoice | null = null;
@@ -175,21 +176,7 @@ export function speak(text: string, lang: string = 'he-IL'): void {
 }
 
 export function speakNumber(num: number): void {
-  const hebrewNumbers: Record<number, string> = {
-    0: 'אפס',
-    1: 'אחת',
-    2: 'שתיים',
-    3: 'שלוש',
-    4: 'ארבע',
-    5: 'חמש',
-    6: 'שש',
-    7: 'שבע',
-    8: 'שמונה',
-    9: 'תשע',
-    10: 'עשר'
-  };
-  
-  const text = hebrewNumbers[num] ?? String(num);
+  const text = ttsNumberFeminine(num);
   speak(text);
 }
 

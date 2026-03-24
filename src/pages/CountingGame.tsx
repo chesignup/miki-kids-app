@@ -2,9 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { TopBar } from '../components/TopBar';
 import { Celebration } from '../components/Celebration';
 import { useGameGuard } from '../hooks/useGameGuard';
-import { getRandomEmoji, generateDistractors, shuffleArray, getHebrewNumber } from '../data/numbers';
+import { getRandomEmoji, generateDistractors, shuffleArray } from '../data/numbers';
 import { soundManager } from '../utils/sounds';
-import { speak } from '../utils/speech';
+import { speakSequence } from '../utils/speech';
+import {
+  ttsCountingInstructionParts,
+  ttsCountingCorrectParts,
+  TTS_COUNTING_COMPLETE,
+  TTS_WRONG_TRY_AGAIN
+} from '../utils/hebrewTtsText';
 import { addStars } from '../utils/storage';
 
 interface CountingGameProps {
@@ -17,6 +23,7 @@ interface CountingGameProps {
 
 const TOTAL_ROUNDS = 10;
 const STARS_PER_CORRECT = 2;
+const TTS_OPTS = { rate: 0.78, pitch: 1.05 } as const;
 
 export function CountingGame({
   stars,
@@ -26,7 +33,7 @@ export function CountingGame({
   onStarsUpdate
 }: CountingGameProps) {
   const { busyRef, lock, unlock, safeSetTimeout } = useGameGuard();
-  const currentInstructionRef = useRef('');
+  const currentInstructionPartsRef = useRef<string[]>([]);
 
   const [round, setRound] = useState(1);
   const [count, setCount] = useState(0);
@@ -40,9 +47,9 @@ export function CountingGame({
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
 
   const speakInstruction = useCallback((emojiName: string) => {
-    const instruction = `ספרי את ה${emojiName}, כמה יש?`;
-    currentInstructionRef.current = instruction;
-    speak(instruction);
+    const parts = ttsCountingInstructionParts(emojiName);
+    currentInstructionPartsRef.current = parts;
+    speakSequence(parts, TTS_OPTS);
   }, []);
 
   const generateRound = useCallback(() => {
@@ -70,8 +77,9 @@ export function CountingGame({
   const handleBackgroundClick = useCallback(() => {
     if (busyRef.current || gameComplete) return;
     soundManager.tap();
-    if (currentInstructionRef.current) {
-      speak(currentInstructionRef.current);
+    const parts = currentInstructionPartsRef.current;
+    if (parts.length > 0) {
+      speakSequence(parts, { ...TTS_OPTS, clickOnce: false });
     }
   }, [busyRef, gameComplete]);
 
@@ -93,7 +101,7 @@ export function CountingGame({
       setTotalStarsEarned(prev => prev + STARS_PER_CORRECT);
 
       safeSetTimeout(() => {
-        speak(`כל הכבוד! התשובה היא ${getHebrewNumber(count)}`);
+        speakSequence(ttsCountingCorrectParts(count), TTS_OPTS);
       }, 200);
 
       safeSetTimeout(() => {
@@ -101,7 +109,7 @@ export function CountingGame({
         if (round >= TOTAL_ROUNDS) {
           setGameComplete(true);
           soundManager.levelUp();
-          speak('כל הכבוד! סיימת את כל המשחק!');
+          speakSequence(TTS_COUNTING_COMPLETE, TTS_OPTS);
         } else {
           setRound(r => r + 1);
           generateRound();
@@ -120,7 +128,7 @@ export function CountingGame({
         onStarsUpdate(Math.max(0, newProgress.stars));
       }
 
-      speak('זה לא המספר, נסי שוב!');
+      speakSequence(TTS_WRONG_TRY_AGAIN, TTS_OPTS);
 
       safeSetTimeout(() => {
         setSelectedOption(null);
