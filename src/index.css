@@ -1,0 +1,374 @@
+:root {
+  --bg: #FFF5F9;
+  --primary: #FF4DA6;
+  --primary-dark: #E6438F;
+  --secondary: #FFD700;
+  --secondary-dark: #E6C200;
+  --accent: #7C3AED;
+  --accent-light: #A78BFA;
+  --success: #22C55E;
+  --success-light: #86EFAC;
+  --error: #EF4444;
+  --card-bg: #FFFFFF;
+  --text: #1F2937;
+  --text-light: #6B7280;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow-lg: rgba(0, 0, 0, 0.15);
+  
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+  --radius-xl: 32px;
+  
+  --font-family: 'Heebo', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  font-family: var(--font-family);
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+button {
+  font-family: var(--font-family);
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  transform: scale(0.95);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 32px;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: var(--radius-lg);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 0 var(--primary-dark), 0 6px 12px var(--shadow);
+}
+
+.btn-primary:active {
+  box-shadow: 0 2px 0 var(--primary-dark), 0 3px 6px var(--shadow);
+  transform: translateY(2px);
+}
+
+.btn-secondary {
+  background: var(--secondary);
+  color: var(--text);
+  box-shadow: 0 4px 0 var(--secondary-dark), 0 6px 12px var(--shadow);
+}
+
+.btn-secondary:active {
+  box-shadow: 0 2px 0 var(--secondary-dark), 0 3px 6px var(--shadow);
+  transform: translateY(2px);
+}
+
+.btn-icon {
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.5rem;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 4px 16px var(--shadow);
+  padding: 24px;
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  min-height: 120px;
+  border-radius: var(--radius-xl);
+  background: var(--card-bg);
+  box-shadow: 0 6px 24px var(--shadow);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.game-card:active {
+  transform: scale(0.97);
+  box-shadow: 0 3px 12px var(--shadow);
+}
+
+.number-btn {
+  width: 72px;
+  height: 72px;
+  font-size: 2rem;
+  font-weight: 900;
+  border-radius: var(--radius-lg);
+  background: var(--card-bg);
+  box-shadow: 0 4px 12px var(--shadow);
+  transition: transform 0.1s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.number-btn:active {
+  transform: scale(0.92);
+}
+
+.number-btn.correct {
+  background: var(--success-light);
+  box-shadow: 0 0 0 4px var(--success);
+}
+
+.number-btn.wrong {
+  background: #FEE2E2;
+  box-shadow: 0 0 0 4px var(--error);
+}
+
+.star-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--secondary);
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: var(--radius-xl);
+  font-weight: 700;
+  font-size: 1.1rem;
+  box-shadow: 0 2px 8px var(--shadow);
+}
+
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #E5E7EB;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.screen-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.items-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+.item-emoji {
+  font-size: 2.5rem;
+  animation: popIn 0.3s ease backwards;
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-6px); }
+  80% { transform: translateX(6px); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  75% { transform: rotate(5deg); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes starPop {
+  0% { transform: scale(0) rotate(-180deg); }
+  60% { transform: scale(1.3) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.animate-shake {
+  animation: shake 0.4s ease;
+}
+
+.animate-pulse {
+  animation: pulse 0.6s ease;
+}
+
+.animate-bounce {
+  animation: bounce 0.5s ease;
+}
+
+.animate-wiggle {
+  animation: wiggle 0.4s ease;
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.4s ease;
+}
+
+.animate-starPop {
+  animation: starPop 0.5s ease;
+}
+
+.confetti-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  animation: confettiFall 2s ease-out forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(720deg);
+    opacity: 0;
+  }
+}
+
+.tracing-canvas {
+  touch-action: none;
+  background: transparent;
+}
+
+.letter-guide {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 200px;
+  font-weight: 900;
+  color: #E5E7EB;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.letter-traced {
+  color: var(--success);
+}
+
+.ltr {
+  direction: ltr;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gap-sm { gap: 8px; }
+.gap-md { gap: 16px; }
+.gap-lg { gap: 24px; }
+
+.mt-auto { margin-top: auto; }
+.mb-auto { margin-bottom: auto; }
+.mx-auto { margin-inline: auto; }
+
+.w-full { width: 100%; }
+.h-full { height: 100%; }
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+
+.z-10 { z-index: 10; }
+.z-20 { z-index: 20; }
