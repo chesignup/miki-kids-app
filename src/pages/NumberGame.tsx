@@ -39,7 +39,7 @@ export function NumberGame({
   const [mistakes, setMistakes] = useState(0);
 
   const speakInstruction = useCallback((num: number) => {
-    const instruction = `איפה המספר ${getHebrewNumber(num)}? מצאי אותו!`;
+    const instruction = `איפה המספר ${getHebrewNumber(num)}? בואי נמצא אותו!`;
     currentInstructionRef.current = instruction;
     speak(instruction);
   }, []);
@@ -92,7 +92,7 @@ export function NumberGame({
       setTotalStarsEarned(prev => prev + STARS_PER_CORRECT);
 
       safeSetTimeout(() => {
-        speak(`יופי! זה ${getHebrewNumber(num)}`);
+        speak(`כל הכבוד! זה המספר ${getHebrewNumber(num)}`);
       }, 200);
 
       safeSetTimeout(() => {
@@ -124,7 +124,7 @@ export function NumberGame({
         onStarsUpdate(Math.max(0, newProgress.stars));
       }
 
-      speak('לא נכון, נסי שוב!');
+      speak('זה לא המספר, נסי שוב!');
 
       safeSetTimeout(() => {
         setSelectedNumber(null);

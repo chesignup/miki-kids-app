@@ -44,7 +44,7 @@ export function LetterTracing({
   const progress = currentLetter ? hitWaypoints.size / currentLetter.path.length : 0;
 
   const speakInstruction = useCallback((letterName: string) => {
-    const instruction = `עקבי באצבע על האות ${letterName}`;
+    const instruction = `עקבי עם האצבע על האות ${letterName}`;
     currentInstructionRef.current = instruction;
     speak(instruction);
   }, []);
@@ -181,7 +181,7 @@ export function LetterTracing({
     onStarsUpdate(newProgress.stars);
     setTotalStarsEarned(prev => prev + STARS_PER_LETTER);
 
-    speak(`יופי! כתבת את האות ${currentLetter?.name}!`);
+    speak(`כל הכבוד! כתבת את האות ${currentLetter?.name}!`);
 
     safeSetTimeout(() => {
       setShowCelebration(false);
@@ -189,7 +189,7 @@ export function LetterTracing({
       if (letterIndex >= TRACING_LETTERS.length - 1) {
         setGameComplete(true);
         soundManager.levelUp();
-        speak('מעולה! סיימת את כל האותיות!');
+        speak('מעולה! סיימת לכתוב את כל האותיות!');
       } else {
         setLetterIndex(prev => prev + 1);
         setHitWaypoints(new Set());

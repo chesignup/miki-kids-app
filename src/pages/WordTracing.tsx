@@ -44,7 +44,7 @@ export function WordTracing({
   const progress = currentLetter ? hitWaypoints.size / currentLetter.path.length : 0;
 
   const speakInstruction = useCallback(() => {
-    const instruction = 'בואי נכתוב ביחד את המילה דור! עקבי באצבע על האותיות';
+    const instruction = 'בואי נכתוב ביחד את המילה דור! עקבי עם האצבע על האותיות';
     currentInstructionRef.current = instruction;
     speak(instruction);
   }, []);
@@ -159,7 +159,7 @@ export function WordTracing({
     newCompleted.add(currentLetterIndex);
     setCompletedLetters(newCompleted);
 
-    speak(`יופי! כתבת את האות ${currentLetter?.name}!`);
+    speak(`כל הכבוד! כתבת את האות ${currentLetter?.name}!`);
 
     safeSetTimeout(() => {
       if (currentLetterIndex >= WORD_DOR.length - 1) {
@@ -171,7 +171,7 @@ export function WordTracing({
         onStarsUpdate(newProgress.stars);
 
         safeSetTimeout(() => {
-          speak('כל הכבוד! כתבת דור!');
+          speak('כל הכבוד! כתבת את המילה דור!');
         }, 500);
       } else {
         setCurrentLetterIndex(prev => prev + 1);

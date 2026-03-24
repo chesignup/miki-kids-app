@@ -40,7 +40,7 @@ export function CountingGame({
   const [totalStarsEarned, setTotalStarsEarned] = useState(0);
 
   const speakInstruction = useCallback((emojiName: string) => {
-    const instruction = `ספרי את ה${emojiName}. כמה יש?`;
+    const instruction = `ספרי את ה${emojiName}, כמה יש?`;
     currentInstructionRef.current = instruction;
     speak(instruction);
   }, []);
@@ -93,7 +93,7 @@ export function CountingGame({
       setTotalStarsEarned(prev => prev + STARS_PER_CORRECT);
 
       safeSetTimeout(() => {
-        speak(`יופי! התשובה היא ${getHebrewNumber(count)}`);
+        speak(`כל הכבוד! התשובה היא ${getHebrewNumber(count)}`);
       }, 200);
 
       safeSetTimeout(() => {
@@ -101,7 +101,7 @@ export function CountingGame({
         if (round >= TOTAL_ROUNDS) {
           setGameComplete(true);
           soundManager.levelUp();
-          speak('כל הכבוד! סיימת את המשחק!');
+          speak('כל הכבוד! סיימת את כל המשחק!');
         } else {
           setRound(r => r + 1);
           generateRound();
@@ -120,7 +120,7 @@ export function CountingGame({
         onStarsUpdate(Math.max(0, newProgress.stars));
       }
 
-      speak('לא נכון, נסי שוב!');
+      speak('זה לא המספר, נסי שוב!');
 
       safeSetTimeout(() => {
         setSelectedOption(null);
