@@ -1,8 +1,9 @@
 import { useRef, useEffect, useCallback } from 'react';
+import type { MutableRefObject } from 'react';
 
 interface GameGuardResult {
-  busyRef: React.MutableRefObject<boolean>;
-  mountedRef: React.MutableRefObject<boolean>;
+  busyRef: MutableRefObject<boolean>;
+  mountedRef: MutableRefObject<boolean>;
   lock: () => void;
   unlock: () => void;
   isLocked: () => boolean;
@@ -40,7 +41,6 @@ export function useGameGuard(watchdogMs: number = 6000): GameGuardResult {
     
     watchdogRef.current = window.setTimeout(() => {
       if (mountedRef.current) {
-        console.warn('Watchdog triggered: auto-unlocking frozen state');
         busyRef.current = false;
       }
     }, watchdogMs);

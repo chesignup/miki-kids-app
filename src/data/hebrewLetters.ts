@@ -160,7 +160,7 @@ export const WORD_DOR: LetterData[] = [
   HEBREW_LETTERS.find(l => l.letter === 'ר')!
 ];
 
-// Subset for the letter tracing game (letters from מיקי + דור)
+// Subset for the letter tracing game (letters + דור)
 export const TRACING_LETTERS: LetterData[] = HEBREW_LETTERS.filter(l =>
   ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'מ', 'י', 'כ'].includes(l.letter)
 );

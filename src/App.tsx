@@ -1,140 +1,80 @@
-import { useState, useEffect, useCallback } from 'react';
-import { SplashScreen } from './components/SplashScreen';
-import { MainMenu } from './pages/MainMenu';
-import { CountingGame } from './pages/CountingGame';
-import { NumberGame } from './pages/NumberGame';
-import { LetterTracing } from './pages/LetterTracing';
-import { WordTracing } from './pages/WordTracing';
-import { loadProgress, loadSettings, saveSettings } from './utils/storage';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { MainMenu, type ScreenId } from './pages/MainMenu';
+import { QuantityMatchGame } from './pages/QuantityMatchGame';
+import { NumberListenGame } from './pages/NumberListenGame';
+import { HebrewLetterTraceGame } from './pages/HebrewLetterTraceGame';
+import { WordDorTraceGame } from './pages/WordDorTraceGame';
+import { useVisibilityAnimation } from './hooks/useVisibilityAnimation';
 import { soundManager } from './utils/sounds';
-import { cancelSpeech } from './utils/speech';
-import { TtsDebugPanel } from './components/TtsDebugPanel';
-
-type Screen = 'splash' | 'menu' | 'counting' | 'number' | 'letter' | 'word';
+import { loadSoundEnabled, loadTotalStars } from './utils/storage';
 
 export default function App() {
-  const [screen, setScreen] = useState<Screen>('splash');
-  const [stars, setStars] = useState(0);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  useVisibilityAnimation();
+
+  const [screen, setScreen] = useState<ScreenId>('menu');
+  const [soundOn, setSoundOn] = useState(() => loadSoundEnabled());
+  const [stars, setStars] = useState(() => loadTotalStars());
 
   useEffect(() => {
-    const progress = loadProgress();
-    setStars(progress.stars);
+    soundManager.enabled = soundOn;
+  }, [soundOn]);
 
-    const settings = loadSettings();
-    setSoundEnabled(settings.soundEnabled);
-    soundManager.enabled = settings.soundEnabled;
+  const onStarsChange = useCallback((n: number) => {
+    setStars(n);
   }, []);
 
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        cancelSpeech();
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
-
-  const handleSoundToggle = useCallback(() => {
-    const newValue = !soundEnabled;
-    setSoundEnabled(newValue);
-    soundManager.enabled = newValue;
-    saveSettings({ soundEnabled: newValue });
-    
-    if (!newValue) {
-      cancelSpeech();
-    }
-  }, [soundEnabled]);
-
-  const handleStarsUpdate = useCallback((newStars: number) => {
-    setStars(newStars);
-  }, []);
-
-  const goToMenu = useCallback(() => {
-    cancelSpeech();
-    setScreen('menu');
-    const progress = loadProgress();
-    setStars(progress.stars);
-  }, []);
-
-  const handleSplashComplete = useCallback(() => {
+  const goMenu = useCallback(() => {
     setScreen('menu');
   }, []);
 
-  const renderScreen = () => {
-    switch (screen) {
-      case 'splash':
-        return <SplashScreen onComplete={handleSplashComplete} />;
-      case 'menu':
-        return (
-          <MainMenu
-            stars={stars}
-            soundEnabled={soundEnabled}
-            onSoundToggle={handleSoundToggle}
-            onSelectGame={(game) => setScreen(game as Screen)}
-          />
-        );
-      case 'counting':
-        return (
-          <CountingGame
-            stars={stars}
-            soundEnabled={soundEnabled}
-            onSoundToggle={handleSoundToggle}
-            onBack={goToMenu}
-            onStarsUpdate={handleStarsUpdate}
-          />
-        );
-      case 'number':
-        return (
-          <NumberGame
-            stars={stars}
-            soundEnabled={soundEnabled}
-            onSoundToggle={handleSoundToggle}
-            onBack={goToMenu}
-            onStarsUpdate={handleStarsUpdate}
-          />
-        );
-      case 'letter':
-        return (
-          <LetterTracing
-            stars={stars}
-            soundEnabled={soundEnabled}
-            onSoundToggle={handleSoundToggle}
-            onBack={goToMenu}
-            onStarsUpdate={handleStarsUpdate}
-          />
-        );
-      case 'word':
-        return (
-          <WordTracing
-            stars={stars}
-            soundEnabled={soundEnabled}
-            onSoundToggle={handleSoundToggle}
-            onBack={goToMenu}
-            onStarsUpdate={handleStarsUpdate}
-          />
-        );
-      default:
-        return null;
-    }
-  };
+  const navigate = useCallback((s: Exclude<ScreenId, 'menu'>) => {
+    setScreen(s);
+  }, []);
+
+  const shellClass = useMemo(
+    () => `app-shell ${screen === 'menu' ? 'app-shell--menu' : 'app-shell--game'}`,
+    [screen],
+  );
 
   return (
-    <div style={styles.app}>
-      {renderScreen()}
-      {import.meta.env.DEV ? <TtsDebugPanel /> : null}
+    <div className={shellClass} dir="rtl">
+      {screen === 'menu' && <MainMenu totalStars={stars} onNavigate={navigate} />}
+
+      {screen === 'quantities' && (
+        <QuantityMatchGame
+          soundOn={soundOn}
+          onSoundToggle={setSoundOn}
+          onBack={goMenu}
+          onStarsChange={onStarsChange}
+        />
+      )}
+
+      {screen === 'numbers' && (
+        <NumberListenGame
+          soundOn={soundOn}
+          onSoundToggle={setSoundOn}
+          onBack={goMenu}
+          onStarsChange={onStarsChange}
+        />
+      )}
+
+      {screen === 'letters' && (
+        <HebrewLetterTraceGame
+          soundOn={soundOn}
+          onSoundToggle={setSoundOn}
+          onBack={goMenu}
+          onStarsChange={onStarsChange}
+        />
+      )}
+
+      {screen === 'wordDor' && (
+        <WordDorTraceGame
+          soundOn={soundOn}
+          onSoundToggle={setSoundOn}
+          onBack={goMenu}
+          onStarsChange={onStarsChange}
+        />
+      )}
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  app: {
-    width: '100%',
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden'
-  }
-};

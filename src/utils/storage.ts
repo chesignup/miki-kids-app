@@ -1,88 +1,60 @@
-const PROGRESS_KEY = 'miki_progress';
-const SETTINGS_KEY = 'miki_settings';
+const PREFIX = 'miki_';
 
-export interface Progress {
-  stars: number;
-  gamesCompleted: number[];
-  highScores: Record<string, number>;
+const KEYS = {
+  sound: `${PREFIX}sound_enabled`,
+  stars: `${PREFIX}total_stars`,
+  games: `${PREFIX}game_stats`,
+} as const;
+
+export interface GameStats {
+  plays: number;
+  wins: number;
+  bestStreak: number;
 }
 
-export interface Settings {
-  soundEnabled: boolean;
-}
+export type GameId = 'quantities' | 'numbers' | 'letters' | 'wordDor';
 
-const DEFAULT_PROGRESS: Progress = {
-  stars: 0,
-  gamesCompleted: [],
-  highScores: {}
-};
+export type AllGameStats = Partial<Record<GameId, GameStats>>;
 
-const DEFAULT_SETTINGS: Settings = {
-  soundEnabled: true
-};
-
-export function loadProgress(): Progress {
+function safeParse<T>(raw: string | null, fallback: T): T {
+  if (raw == null) return fallback;
   try {
-    const stored = localStorage.getItem(PROGRESS_KEY);
-    if (stored) {
-      return { ...DEFAULT_PROGRESS, ...JSON.parse(stored) };
-    }
+    return JSON.parse(raw) as T;
   } catch {
-    // ignore parse errors
-  }
-  return { ...DEFAULT_PROGRESS };
-}
-
-export function saveProgress(progress: Progress): void {
-  try {
-    localStorage.setItem(PROGRESS_KEY, JSON.stringify(progress));
-  } catch {
-    // ignore storage errors
+    return fallback;
   }
 }
 
-export function addStars(amount: number): Progress {
-  const progress = loadProgress();
-  progress.stars = Math.max(0, progress.stars + amount);
-  saveProgress(progress);
-  return progress;
+export function loadSoundEnabled(): boolean {
+  const raw = localStorage.getItem(KEYS.sound);
+  if (raw === null) return true;
+  return raw === '1';
 }
 
-export function markGameCompleted(gameId: number): Progress {
-  const progress = loadProgress();
-  if (!progress.gamesCompleted.includes(gameId)) {
-    progress.gamesCompleted.push(gameId);
-  }
-  saveProgress(progress);
-  return progress;
+export function saveSoundEnabled(on: boolean): void {
+  localStorage.setItem(KEYS.sound, on ? '1' : '0');
 }
 
-export function setHighScore(gameId: string, score: number): Progress {
-  const progress = loadProgress();
-  const currentHigh = progress.highScores[gameId] ?? 0;
-  if (score > currentHigh) {
-    progress.highScores[gameId] = score;
-    saveProgress(progress);
-  }
-  return progress;
+export function loadTotalStars(): number {
+  const n = Number(localStorage.getItem(KEYS.stars));
+  return Number.isFinite(n) && n >= 0 ? Math.floor(n) : 0;
 }
 
-export function loadSettings(): Settings {
-  try {
-    const stored = localStorage.getItem(SETTINGS_KEY);
-    if (stored) {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-    }
-  } catch {
-    // ignore
-  }
-  return { ...DEFAULT_SETTINGS };
+export function addStars(amount: number): number {
+  const next = loadTotalStars() + Math.max(0, amount);
+  localStorage.setItem(KEYS.stars, String(next));
+  return next;
 }
 
-export function saveSettings(settings: Settings): void {
-  try {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
-  } catch {
-    // ignore
-  }
+export function loadGameStats(): AllGameStats {
+  return safeParse<AllGameStats>(localStorage.getItem(KEYS.games), {});
+}
+
+export function updateGameStats(gameId: GameId, patch: Partial<GameStats>): AllGameStats {
+  const all = loadGameStats();
+  const prev = all[gameId] ?? { plays: 0, wins: 0, bestStreak: 0 };
+  const merged: GameStats = { ...prev, ...patch };
+  all[gameId] = merged;
+  localStorage.setItem(KEYS.games, JSON.stringify(all));
+  return all;
 }

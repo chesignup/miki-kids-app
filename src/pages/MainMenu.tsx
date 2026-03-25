@@ -1,222 +1,144 @@
-import { useEffect } from 'react';
-import { MikiMascot } from '../components/MikiMascot';
+import { useCallback, useRef } from 'react';
+import { CHARACTER_ASSETS } from '../data/characterAssets';
 import { soundManager } from '../utils/sounds';
-import { speakSequence } from '../utils/speech';
-import { TTS_MENU_GREETING } from '../utils/hebrewTtsText';
+import { STR } from '../data/strings';
 
-interface MainMenuProps {
-  stars: number;
-  soundEnabled: boolean;
-  onSoundToggle: () => void;
-  onSelectGame: (game: string) => void;
-}
+export type ScreenId =
+  | 'menu'
+  | 'quantities'
+  | 'numbers'
+  | 'letters'
+  | 'wordDor';
 
-const GAMES = [
+type Props = {
+  totalStars: number;
+  onNavigate: (s: Exclude<ScreenId, 'menu'>) => void;
+};
+
+type Card = {
+  id: Exclude<ScreenId, 'menu'>;
+  title: string;
+  desc: string;
+  thumb: string;
+  thumbAlt: string;
+};
+
+const CARDS: Card[] = [
   {
-    id: 'counting',
-    title: 'ספירה',
-    subtitle: 'כמה יש?',
-    emoji: '🔢',
-    color: '#FF4DA6'
+    id: 'quantities',
+    title: STR.menuQuantities,
+    desc: STR.menuQuantitiesDesc,
+    thumb: CHARACTER_ASSETS.mickey,
+    thumbAlt: '',
   },
   {
-    id: 'number',
-    title: 'מספרים',
-    subtitle: 'מצאי את המספר',
-    emoji: '🎯',
-    color: '#7C3AED'
+    id: 'numbers',
+    title: STR.menuNumbers,
+    desc: STR.menuNumbersDesc,
+    thumb: CHARACTER_ASSETS.donald,
+    thumbAlt: '',
   },
   {
-    id: 'letter',
-    title: 'אותיות',
-    subtitle: 'עקבי אחרי האות',
-    emoji: '✏️',
-    color: '#22C55E'
+    id: 'letters',
+    title: STR.menuLetters,
+    desc: STR.menuLettersDesc,
+    thumb: CHARACTER_ASSETS.minnie,
+    thumbAlt: '',
   },
   {
-    id: 'word',
-    title: 'כתיבה',
-    subtitle: 'כתבי דור',
-    emoji: '📝',
-    color: '#F97316'
-  }
+    id: 'wordDor',
+    title: STR.menuWordDor,
+    desc: STR.menuWordDorDesc,
+    thumb: CHARACTER_ASSETS.minnieStar,
+    thumbAlt: '',
+  },
 ];
 
-export function MainMenu({ stars, soundEnabled, onSoundToggle, onSelectGame }: MainMenuProps) {
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Short queued phrases read more clearly than one long line with ! marks
-      speakSequence(TTS_MENU_GREETING, { rate: 0.78, pitch: 1.05 });
-    }, 500);
-    return () => clearTimeout(timer);
-  }, []);
+export function MainMenu({ totalStars, onNavigate }: Props) {
+  const lastNav = useRef(0);
 
-  const handleGameSelect = (gameId: string) => {
-    soundManager.click();
-    onSelectGame(gameId);
-  };
-
-  const handleSoundToggle = (e: React.MouseEvent | React.TouchEvent) => {
-    e.stopPropagation();
-    soundManager.tap();
-    onSoundToggle();
-  };
+  const safeNavigate = useCallback(
+    (id: Exclude<ScreenId, 'menu'>) => {
+      const t = Date.now();
+      if (t - lastNav.current < 420) return;
+      lastNav.current = t;
+      soundManager.click();
+      onNavigate(id);
+    },
+    [onNavigate],
+  );
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
-        <div style={styles.headerContent}>
-          <h1 style={styles.title}>מיקי מלמדת</h1>
-          <div style={styles.headerRight}>
-            <div style={styles.starBadge}>
-              <span>⭐</span>
-              <span style={styles.starCount}>{stars}</span>
-            </div>
-            <button
-              style={styles.soundButton}
-              onClick={handleSoundToggle}
-              onTouchEnd={handleSoundToggle}
-            >
-              {soundEnabled ? '🔊' : '🔇'}
-            </button>
+    <div className="main-menu">
+      <div className="main-menu__hero">
+        <div className="main-menu__mascot" aria-hidden>
+          <div className="main-menu__mascot-pair">
+            <img
+              className="main-menu__mascot-img main-menu__mascot-img--mickey"
+              src={CHARACTER_ASSETS.mickey}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <img
+              className="main-menu__mascot-img main-menu__mascot-img--minnie"
+              src={CHARACTER_ASSETS.minnie}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+          <div className="main-menu__mascot-friends">
+            <img
+              className="main-menu__friend-pill"
+              src={CHARACTER_ASSETS.donald}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <img
+              className="main-menu__friend-pill"
+              src={CHARACTER_ASSETS.minnieStar}
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
           </div>
         </div>
-      </header>
-
-      <main style={styles.main}>
-        <MikiMascot 
-          size="large" 
-          message="בואי נשחק!" 
-          animated={false}
-          variant="pointing"
-        />
-
-        <div style={styles.gamesGrid}>
-          {GAMES.map((game, index) => (
-            <button
-              key={game.id}
-              style={{
-                ...styles.gameCard,
-                animationDelay: `${index * 0.1}s`,
-                borderTop: `4px solid ${game.color}`
-              }}
-              onClick={() => handleGameSelect(game.id)}
-              onTouchEnd={(e) => {
-                e.preventDefault();
-                handleGameSelect(game.id);
-              }}
-            >
-              <span style={styles.gameEmoji}>{game.emoji}</span>
-              <span style={styles.gameTitle}>{game.title}</span>
-              <span style={styles.gameSubtitle}>{game.subtitle}</span>
-            </button>
-          ))}
+        <h1 className="main-menu__title">{STR.appTitle}</h1>
+        {STR.tagline ? <p className="main-menu__tagline">{STR.tagline}</p> : null}
+        <div className="main-menu__stars" aria-live="polite">
+          <span className="main-menu__star-icon">⭐</span>
+          <span>
+            {STR.stars}: {totalStars}
+          </span>
         </div>
-      </main>
+      </div>
+
+      <nav className="main-menu__grid" aria-label="משחקים">
+        {CARDS.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            className="menu-card"
+            onTouchStart={(e) => e.stopPropagation()}
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              safeNavigate(c.id);
+            }}
+            onTouchEnd={(e) => {
+              e.stopPropagation();
+              safeNavigate(c.id);
+            }}
+          >
+            <span className="menu-card__thumb" aria-hidden>
+              <img src={c.thumb} alt={c.thumbAlt} loading="lazy" decoding="async" />
+            </span>
+            <span className="menu-card__title">{c.title}</span>
+            <span className="menu-card__desc">{c.desc}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    display: 'flex',
-    flexDirection: 'column',
-    height: '100%',
-    width: '100%',
-    background: 'linear-gradient(180deg, var(--bg) 0%, #FFE4F0 100%)'
-  },
-  header: {
-    padding: '16px',
-    background: 'linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%)',
-    boxShadow: '0 4px 12px var(--shadow)'
-  },
-  headerContent: {
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  title: {
-    margin: 0,
-    fontSize: '1.5rem',
-    fontWeight: 900,
-    color: 'white',
-    textShadow: '0 2px 4px rgba(0,0,0,0.2)'
-  },
-  headerRight: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px'
-  },
-  starBadge: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-    background: 'var(--secondary)',
-    padding: '8px 14px',
-    borderRadius: '24px',
-    fontSize: '1.1rem',
-    fontWeight: 700,
-    boxShadow: '0 2px 8px var(--shadow)'
-  },
-  starCount: {
-    color: 'var(--text)'
-  },
-  soundButton: {
-    width: '48px',
-    height: '48px',
-    borderRadius: '50%',
-    background: 'rgba(255,255,255,0.2)',
-    border: 'none',
-    fontSize: '1.5rem',
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  main: {
-    flex: 1,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    padding: '24px 16px',
-    gap: '24px',
-    overflowY: 'auto'
-  },
-  gamesGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(2, 1fr)',
-    gap: '16px',
-    width: '100%',
-    maxWidth: '400px'
-  },
-  gameCard: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '20px 12px',
-    background: 'white',
-    borderRadius: '24px',
-    boxShadow: '0 6px 20px var(--shadow)',
-    border: 'none',
-    cursor: 'pointer',
-    minHeight: '140px',
-    transition: 'transform 0.15s ease, box-shadow 0.15s ease',
-    animation: 'slideUp 0.4s ease backwards'
-  },
-  gameEmoji: {
-    fontSize: '2.5rem',
-    marginBottom: '8px'
-  },
-  gameTitle: {
-    fontSize: '1.25rem',
-    fontWeight: 700,
-    color: 'var(--text)',
-    marginBottom: '4px'
-  },
-  gameSubtitle: {
-    fontSize: '0.875rem',
-    color: 'var(--text-light)',
-    textAlign: 'center'
-  }
-};
